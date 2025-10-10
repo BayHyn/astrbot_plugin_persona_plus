@@ -1,7 +1,6 @@
 from __future__ import annotations
 
 import asyncio
-import json
 from dataclasses import dataclass
 from pathlib import Path
 
@@ -162,33 +161,15 @@ class PersonaPlus(Star):
 
     @staticmethod
     def _parse_persona_payload(raw_text: str) -> tuple[str, list[str]]:
-        """从用户传入的文本中解析 system_prompt 与 begin_dialogs.
+        """从用户传入的文本中解析 system_prompt.
 
-        支持两种格式：
-        1. 纯文本 => 全部作为 system_prompt
-        2. JSON => {"system_prompt": str, "begin_dialogs": ["user", "assistant", ...]}
+        所有内容将被视为纯文本，不支持 JSON 结构化导入。
         """
 
         raw_text = raw_text.strip()
         if not raw_text:
             raise ValueError("内容为空，无法导入人格。")
-
-        try:
-            payload = json.loads(raw_text)
-        except json.JSONDecodeError:
-            return raw_text, []
-
-        if not isinstance(payload, dict):
-            raise ValueError("JSON 格式必须是对象，包含 system_prompt 字段。")
-
-        prompt = payload.get("system_prompt")
-        if not prompt:
-            raise ValueError("JSON 中缺少 system_prompt 字段。")
-        begin_dialogs = payload.get("begin_dialogs", [])
-        if begin_dialogs and len(begin_dialogs) % 2 != 0:
-            raise ValueError("begin_dialogs 条目数量必须为偶数（用户/助手交替）。")
-
-        return str(prompt), [str(x) for x in begin_dialogs]
+        return raw_text, []
 
     @staticmethod
     async def _read_file_component(component: Comp.BaseMessageComponent) -> str | None:
@@ -197,8 +178,8 @@ class PersonaPlus(Star):
             if not content_path:
                 return None
             path = Path(content_path)
-            if path.suffix.lower() not in {".txt", ".md", ".json"}:
-                raise ValueError("仅支持导入 txt / md / json 文件。")
+            if path.suffix.lower() not in {".txt", ".md"}:
+                raise ValueError("仅支持导入 txt / md 文件。")
             return path.read_text(encoding="utf-8")
         return None
 
@@ -346,8 +327,8 @@ class PersonaPlus(Star):
             "- /persona_plus help — 查看帮助与配置说明",
             "- /persona_plus list — 列出所有人格",
             "- /persona_plus view <persona_id> — 查看人格详情",
-            "- /persona_plus create <persona_id> — 创建新人格，随后发送内容或文件 (支持 txt/md/json)",
-            "- /persona_plus update <persona_id> — 更新人格，随后发送内容或文件 (支持 txt/md/json)",
+            "- /persona_plus create <persona_id> — 创建新人格，随后发送内容或文件 (支持 txt/md)",
+            "- /persona_plus update <persona_id> — 更新人格，随后发送内容或文件 (支持 txt/md)",
             "- /persona_plus delete <persona_id> — 删除人格 (管理员)",
         ]
         yield event.plain_result("\n".join(sections))
@@ -447,9 +428,7 @@ class PersonaPlus(Star):
             )
             return
 
-        yield event.plain_result(
-            "请发送人格内容或文件 (txt/md/json)，将在收到后立即处理。"
-        )
+        yield event.plain_result("请发送人格内容或文件 (txt/md)，将在收到后立即处理。")
 
         @session_waiter(timeout=self.manage_wait_timeout)
         async def create_waiter(
@@ -503,7 +482,7 @@ class PersonaPlus(Star):
             return
 
         yield event.plain_result(
-            "请发送新的人格内容或文件 (txt/md/json)，将在收到后立即更新。"
+            "请发送新的人格内容或文件 (txt/md)，将在收到后立即更新。"
         )
 
         @session_waiter(timeout=self.manage_wait_timeout)
