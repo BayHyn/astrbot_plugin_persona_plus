@@ -329,6 +329,7 @@ class PersonaPlus(Star):
             "- /persona_plus view <persona_id> — 查看人格详情",
             "- /persona_plus create <persona_id> — 创建新人格，随后发送内容或文件 (支持 txt/md)",
             "- /persona_plus update <persona_id> — 更新人格，随后发送内容或文件 (支持 txt/md)",
+            "- /persona_plus avatar <persona_id> — 上传人格头像，随后发送图片",
             "- /persona_plus delete <persona_id> — 删除人格 (管理员)",
         ]
         yield event.plain_result("\n".join(sections))
@@ -408,6 +409,7 @@ class PersonaPlus(Star):
             yield event.plain_result(str(exc))
             return
 
+        self.qq_sync.delete_avatar(persona_id)
         yield event.plain_result(f"人格 {persona_id} 已删除。")
 
     @persona_plus.command("create")
@@ -464,6 +466,54 @@ class PersonaPlus(Star):
                 await event.send(event.plain_result(f"创建流程异常：{exc}"))
 
         asyncio.create_task(wait_for_create())
+        event.stop_event()
+        return
+
+    @persona_plus.command("avatar")
+    async def cmd_avatar(self, event: AstrMessageEvent, persona_id: str):
+        """上传或更新人格头像。"""
+
+        if not self._has_permission(event, manage_operation=True):
+            yield event.plain_result("此操作需要管理员权限。")
+            return
+
+        try:
+            await self.persona_mgr.get_persona(persona_id)
+        except ValueError:
+            yield event.plain_result(f"未找到人格 {persona_id}，请先创建该人格。")
+            return
+
+        yield event.plain_result("请发送人格头像图片，将在收到后立即保存。")
+
+        @session_waiter(timeout=self.manage_wait_timeout)
+        async def avatar_waiter(
+            controller: SessionController, next_event: AstrMessageEvent
+        ) -> None:
+            try:
+                await self.qq_sync.save_avatar_from_event(next_event, persona_id)
+            except ValueError as exc:
+                await next_event.send(next_event.plain_result(f"头像上传失败：{exc}"))
+            except Exception as exc:  # noqa: BLE001
+                logger.exception("上传人格头像时出现异常")
+                await next_event.send(next_event.plain_result(f"头像上传失败：{exc}"))
+            else:
+                self.qq_sync.reset_persona_cache(persona_id)
+                await next_event.send(
+                    next_event.plain_result(f"人格 {persona_id} 头像上传成功。")
+                )
+            finally:
+                controller.stop()
+
+        async def wait_for_avatar() -> None:
+            try:
+                await avatar_waiter(event)
+            except TimeoutError:
+                await event.send(event.plain_result("等待头像图片超时，操作已取消。"))
+            except Exception as exc:  # noqa: BLE001
+                logger.exception("上传头像等待流程异常")
+                await event.send(event.plain_result(f"头像上传流程异常：{exc}"))
+
+        asyncio.create_task(wait_for_avatar())
         event.stop_event()
         return
 

@@ -48,29 +48,6 @@ class QQProfileSync:
             f"avatar={self.sync_avatar}"
         )
 
-    async def resolve_active_persona(self, event: AstrMessageEvent) -> Optional[str]:
-        umo = event.unified_msg_origin
-        cid = await self.context.conversation_manager.get_curr_conversation_id(umo)
-        if cid:
-            conversation = await self.context.conversation_manager.get_conversation(
-                unified_msg_origin=umo,
-                conversation_id=cid,
-                create_if_not_exists=True,
-            )
-            if (
-                conversation
-                and conversation.persona_id
-                and conversation.persona_id != "[%None]"
-            ):
-                return conversation.persona_id
-
-        persona_v3 = self.context.persona_manager.selected_default_persona_v3
-        if persona_v3:
-            persona_id = persona_v3.get("name")
-            if persona_id and persona_id != "[%None]":
-                return persona_id
-        return None
-
     def format_nickname(self, persona_id: str) -> str:
         try:
             nickname = self.nickname_template.format(persona_id=persona_id)
@@ -83,7 +60,6 @@ class QQProfileSync:
         return self.avatar_dir / f"{persona_id}.jpg"
 
     async def download_and_save_avatar(self, url: str, save_path: Path) -> None:
-        url = url.replace("https://", "http://")
         async with aiohttp.ClientSession() as session:
             async with session.get(url) as resp:
                 if resp.status != 200:
@@ -91,13 +67,15 @@ class QQProfileSync:
                 async with aiofiles.open(save_path, "wb") as f:
                     await f.write(await resp.read())
 
-    def extract_image_component(self, event: AstrMessageEvent) -> Optional[Comp.Image]:
+    def extract_image_component(
+        self, event: AstrMessageEvent
+    ) -> Optional[Comp.BaseMessageComponent]:
         for component in event.get_messages():
-            if isinstance(component, Comp.Image):
+            if isinstance(component, (Comp.Image, Comp.File)):
                 return component
             if isinstance(component, Comp.Reply) and component.chain:
                 for reply_component in component.chain:
-                    if isinstance(reply_component, Comp.Image):
+                    if isinstance(reply_component, (Comp.Image, Comp.File)):
                         return reply_component
         return None
 
@@ -105,12 +83,46 @@ class QQProfileSync:
         self, event: AstrMessageEvent, persona_id: str
     ) -> Path:
         image_component = self.extract_image_component(event)
-        if not image_component or not getattr(image_component, "url", None):
-            raise ValueError("未检测到图片，请附带或引用一张图片。")
+        if not image_component:
+            raise ValueError("未检测到图片或文件，请附带或引用一张图片。")
 
         avatar_path = self.get_avatar_path(persona_id)
-        await self.download_and_save_avatar(image_component.url, avatar_path)
-        return avatar_path
+
+        if isinstance(image_component, Comp.Image) and getattr(
+            image_component, "url", None
+        ):
+            await self.download_and_save_avatar(image_component.url, avatar_path)
+            return avatar_path
+
+        if isinstance(image_component, Comp.File):
+            temp_path = await image_component.get_file()
+            if not temp_path:
+                raise ValueError("文件获取失败，请重新发送。")
+            src = Path(temp_path)
+            if src.suffix.lower() not in {".jpg", ".jpeg", ".png", ".gif", ".webp"}:
+                raise ValueError("仅支持 jpg/jpeg/png/gif/webp 图片文件。")
+            async with aiofiles.open(src, "rb") as src_fp:
+                data = await src_fp.read()
+            async with aiofiles.open(avatar_path, "wb") as dest_fp:
+                await dest_fp.write(data)
+            return avatar_path
+
+        raise ValueError("暂不支持此类消息，请发送图片或图片文件。")
+
+    def reset_persona_cache(self, persona_id: str) -> None:
+        to_remove = [
+            key
+            for key, value in self._last_synced_persona.items()
+            if value == persona_id
+        ]
+        for key in to_remove:
+            self._last_synced_persona.pop(key, None)
+
+    def delete_avatar(self, persona_id: str) -> None:
+        avatar_path = self.get_avatar_path(persona_id)
+        if avatar_path.exists():
+            avatar_path.unlink()
+        self.reset_persona_cache(persona_id)
 
     async def maybe_sync_profile(
         self,
