@@ -19,16 +19,10 @@ from .qq_profile_sync import QQProfileSync
 class KeywordMapping:
     keyword: str
     persona_id: str
-    case_sensitive: bool = False
     reply_template: str = ""
 
     def matches(self, text: str) -> bool:
-        if not self.case_sensitive:
-            text = text.lower()
-            keyword = self.keyword.lower()
-        else:
-            keyword = self.keyword
-        return keyword in text
+        return self.keyword.lower() in text.lower()
 
 
 @register(
@@ -98,21 +92,21 @@ class PersonaPlus(Star):
         self.clear_context_on_switch = bool(
             self.config.get("clear_context_on_switch", False)
         )
-        raw_timeout = self.config.get("manage_wait_timeout_seconds", 120)
+        raw_timeout = self.config.get("manage_wait_timeout_seconds", 60)
         try:
             timeout = int(raw_timeout)
         except (TypeError, ValueError):
             logger.warning(
-                "Persona+ manage_wait_timeout_seconds=%r 非法，使用默认值 120",
+                "Persona+ manage_wait_timeout_seconds=%r 非法，使用默认值 60",
                 raw_timeout,
             )
-            timeout = 120
+            timeout = 60
         if timeout <= 0:
             logger.warning(
-                "Persona+ manage_wait_timeout_seconds=%r 必须为正数，已重置为 120",
+                "Persona+ manage_wait_timeout_seconds=%r 必须为正数，已重置为 60",
                 raw_timeout,
             )
-            timeout = 120
+            timeout = 60
         self.manage_wait_timeout = timeout
         self.qq_sync.load_config(self.config)
 
@@ -157,7 +151,7 @@ class PersonaPlus(Star):
             _, keyword_raw = keyword_part.split("|", 1)
             keyword = keyword_raw.strip()
             logger.warning(
-                "Persona+ 不再支持匹配模式配置，已将 %r 按包含匹配处理。",
+                "Persona+ 已忽略匹配模式配置，按包含匹配处理：%s",
                 entry,
             )
 
@@ -263,45 +257,44 @@ class PersonaPlus(Star):
                     persona_id=persona_id,
                 )
             else:
-                await self.context.conversation_manager.update_conversation(
-                    unified_msg_origin=umo,
-                    conversation_id=cid,
-                    persona_id=persona_id,
-                    history=history_reset,
-                )
+                await self._update_current_conversation(umo, persona_id, history_reset)
         elif scope == "session":
             config = self.context.astrbot_config_mgr.get_conf(umo)
             if config:
                 provider_settings = config.setdefault("provider_settings", {})
                 provider_settings["default_personality"] = persona_id
                 config.save_config()
-            cid = await self.context.conversation_manager.get_curr_conversation_id(umo)
-            if cid:
-                await self.context.conversation_manager.update_conversation(
-                    unified_msg_origin=umo,
-                    conversation_id=cid,
-                    persona_id=persona_id,
-                    history=history_reset,
-                )
+            await self._update_current_conversation(umo, persona_id, history_reset)
         elif scope == "global":
             config = self.context.astrbot_config_mgr.default_conf
             provider_settings = config.setdefault("provider_settings", {})
             provider_settings["default_personality"] = persona_id
             config.save_config()
-            cid = await self.context.conversation_manager.get_curr_conversation_id(umo)
-            if cid:
-                await self.context.conversation_manager.update_conversation(
-                    unified_msg_origin=umo,
-                    conversation_id=cid,
-                    persona_id=persona_id,
-                    history=history_reset,
-                )
+            await self._update_current_conversation(umo, persona_id, history_reset)
 
         await self.qq_sync.maybe_sync_profile(event, persona_id)
 
         if announce:
             return event.plain_result(announce)
         return None
+
+    async def _update_current_conversation(
+        self,
+        unified_msg_origin: str,
+        persona_id: str,
+        history: list[dict] | None,
+    ) -> None:
+        cid = await self.context.conversation_manager.get_curr_conversation_id(
+            unified_msg_origin
+        )
+        if not cid:
+            return
+        await self.context.conversation_manager.update_conversation(
+            unified_msg_origin=unified_msg_origin,
+            conversation_id=cid,
+            persona_id=persona_id,
+            history=history,
+        )
 
     def _collect_admin_ids(self, umo: str | None) -> set[str]:
         admin_ids: set[str] = set()

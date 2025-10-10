@@ -7,8 +7,9 @@
   },
   "keyword_mappings": {
     "description": "关键词与人格切换映射列表",
-    "hint": "每行填写 关键词:人格ID，支持 # 注释。",
-    "type": "text"
+    "hint": "每行填写 关键词:人格ID，使用英文冒号分隔！！！",
+    "type": "text",
+    "default":"关键词:人格"
   },
   "auto_switch_scope": {
     "description": "切换作用范围",
@@ -31,7 +32,7 @@
     "description": "人格管理需管理员",
     "hint": "启用后，创建/更新/删除人格指令仅管理员可用。",
     "type": "bool",
-    "default": false
+    "default": true
   },
   "enable_auto_switch_announce": {
     "description": "自动切换提示",
