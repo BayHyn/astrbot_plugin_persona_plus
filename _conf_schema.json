@@ -35,8 +35,8 @@
     "default": true
   },
   "enable_auto_switch_announce": {
-    "description": "自动切换提示",
-    "hint": "当使用关键词自动切换人格时，将发送提示。",
+    "description": "切换提示",
+    "hint": "切换人格时，是否发送提示。",
     "type": "bool",
     "default": false
   },

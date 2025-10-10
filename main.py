@@ -2,12 +2,10 @@ from __future__ import annotations
 
 import asyncio
 from dataclasses import dataclass
-from pathlib import Path
 
 from astrbot.api import logger
 from astrbot.api.event import AstrMessageEvent, MessageEventResult, filter
 from astrbot.api.star import Context, Star, register
-import astrbot.api.message_components as Comp
 from astrbot.core.config.astrbot_config import AstrBotConfig
 from astrbot.core.persona_mgr import PersonaManager
 from astrbot.core.utils.session_waiter import SessionController, session_waiter
@@ -161,39 +159,19 @@ class PersonaPlus(Star):
 
     @staticmethod
     def _parse_persona_payload(raw_text: str) -> tuple[str, list[str]]:
-        """从用户传入的文本中解析 system_prompt.
-
-        所有内容将被视为纯文本，不支持 JSON 结构化导入。
-        """
+        """从用户传入的文本中解析 system_prompt."""
 
         raw_text = raw_text.strip()
         if not raw_text:
             raise ValueError("内容为空，无法导入人格。")
         return raw_text, []
-
-    @staticmethod
-    async def _read_file_component(component: Comp.BaseMessageComponent) -> str | None:
-        if isinstance(component, Comp.File):
-            content_path = await component.get_file()
-            if not content_path:
-                return None
-            path = Path(content_path)
-            if path.suffix.lower() not in {".txt", ".md"}:
-                raise ValueError("仅支持导入 txt / md 文件。")
-            return path.read_text(encoding="utf-8")
-        return None
-
     async def _extract_persona_from_event(self, event: AstrMessageEvent) -> str:
-        """从消息链中提取文本或文件内容。"""
+        """从消息链中提取文本内容。"""
 
-        if event.message_str.strip():
-            return event.message_str
-
-        for component in event.message_obj.message:
-            data = await self._read_file_component(component)
-            if data:
-                return data
-        raise ValueError("未检测到可解析的文本或文件内容。")
+        text = event.message_str.strip()
+        if text:
+            return text
+        raise ValueError("未检测到可解析的文本内容。请直接发送人格文本。")
 
     async def _create_persona(
         self,
@@ -277,6 +255,56 @@ class PersonaPlus(Star):
             history=history,
         )
 
+    @filter.event_message_type(filter.EventMessageType.ALL)
+    async def on_quick_switch_command(self, event: AstrMessageEvent):
+        """支持 `/pp <persona_id>` 的快捷切换（框架不支持空子命令时使用此拦截）。"""
+
+        if not event.is_at_or_wake_command:
+            return
+
+        text = event.get_message_str().strip()
+        if not text:
+            return
+
+        parts = text.split()
+        if not parts:
+            return
+
+        cmd = parts[0].lower()
+        aliases = {"pp", "persona_plus", "persona+"}
+        if cmd not in aliases:
+            return
+
+        # 形如: pp <persona_id>
+        if len(parts) != 2:
+            return
+
+        persona_id = parts[1].strip()
+        if not persona_id:
+            return
+
+        # 验证权限与存在性
+        if not self._has_permission(event, manage_operation=False):
+            yield event.plain_result("此操作需要管理员权限。")
+            return
+
+        try:
+            await self.persona_mgr.get_persona(persona_id)
+        except ValueError as exc:
+            yield event.plain_result(str(exc))
+            return
+
+        announce = None
+        if self.auto_switch_announce:
+            announce = f"已切换人格为 {persona_id}"
+
+        result = await self._switch_persona(
+            event, persona_id=persona_id, announce=announce
+        )
+        if result is not None:
+            yield result
+            event.stop_event()
+
     def _collect_admin_ids(self, umo: str | None) -> set[str]:
         admin_ids: set[str] = set()
         default_conf = self.context.get_config()
@@ -323,14 +351,15 @@ class PersonaPlus(Star):
             return
 
         sections = [
-            "Persona+ 扩展指令（别名 /pp /persona+ 可用）：",
+            "Persona+ 扩展指令（/persona_plus /pp /persona+ 可用）：",
+            "- /persona_plus 人格ID — 切换到指定人格",
             "- /persona_plus help — 查看帮助与配置说明",
             "- /persona_plus list — 列出所有人格",
             "- /persona_plus view <persona_id> — 查看人格详情",
-            "- /persona_plus create <persona_id> — 创建新人格，随后发送内容或文件 (支持 txt/md)",
-            "- /persona_plus update <persona_id> — 更新人格，随后发送内容或文件 (支持 txt/md)",
+            "- /persona_plus create <persona_id> — 创建新人格，随后发送纯文本内容（不要上传文件）",
+            "- /persona_plus update <persona_id> — 更新人格，随后发送纯文本内容（不要上传文件）",
             "- /persona_plus avatar <persona_id> — 上传人格头像，随后发送图片",
-            "- /persona_plus delete <persona_id> — 删除人格 (管理员)",
+            "- /persona_plus delete <persona_id> — 删除人格 (管理员)"
         ]
         yield event.plain_result("\n".join(sections))
 
