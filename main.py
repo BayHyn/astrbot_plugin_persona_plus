@@ -158,13 +158,10 @@ class PersonaPlus(Star):
         return KeywordMapping(keyword=keyword, persona_id=persona_id)
 
     @staticmethod
-    def _parse_persona_payload(raw_text: str) -> tuple[str, list[str]]:
-        """从用户传入的文本中解析 system_prompt."""
-
-        raw_text = raw_text.strip()
-        if not raw_text:
-            raise ValueError("内容为空，无法导入人格。")
+    def _parse_persona_payload(raw_text: str) -> tuple[str, list]:
+        """将用户传入的全部文本作为 system_prompt"""
         return raw_text, []
+
     async def _extract_persona_from_event(self, event: AstrMessageEvent) -> str:
         """从消息链中提取文本内容。"""
 
@@ -174,15 +171,17 @@ class PersonaPlus(Star):
         raise ValueError("未检测到可解析的文本内容。请直接发送人格文本。")
 
     async def _create_persona(
-        self,
-        persona_id: str,
-        system_prompt: str,
-        begin_dialogs: list[str],
-        tools: list[str] | None = None,
-    ) -> None:
+        self, persona_id: str, system_prompt: str, begin_dialogs: list, tools: list
+    ):
+        """创建新人格"""
         try:
             await self.persona_mgr.get_persona(persona_id)
+            # 如果代码执行到这里，说明人格已存在
+            raise ValueError(
+                f"人格 {persona_id} 已存在，请使用 /persona_plus update {persona_id}。"
+            )
         except ValueError:
+            # 只有在 get_persona 抛出 ValueError (不存在) 时才创建
             await self.persona_mgr.create_persona(
                 persona_id=persona_id,
                 system_prompt=system_prompt,
@@ -190,10 +189,6 @@ class PersonaPlus(Star):
                 tools=tools,
             )
             return
-
-        raise ValueError(
-            f"人格 {persona_id} 已存在，请使用 /persona_plus update {persona_id}。"
-        )
 
     async def _switch_persona(
         self,
@@ -281,6 +276,11 @@ class PersonaPlus(Star):
 
         persona_id = parts[1].strip()
         if not persona_id:
+            return
+
+        # 如果是已定义的子命令，则忽略，交由指令组处理
+        known_subcommands = self.persona_plus.get_sub_commands()
+        if persona_id.lower() in known_subcommands:
             return
 
         # 验证权限与存在性
