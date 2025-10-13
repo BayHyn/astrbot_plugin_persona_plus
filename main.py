@@ -279,7 +279,15 @@ class PersonaPlus(Star):
             return
 
         # 如果是已定义的子命令，则忽略，交由指令组处理
-        known_subcommands = self.persona_plus.get_sub_commands()
+        known_subcommands = {
+            "help",
+            "list",
+            "view",
+            "delete",
+            "create",
+            "avatar",
+            "update",
+        }
         if persona_id.lower() in known_subcommands:
             return
 
