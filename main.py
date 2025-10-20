@@ -467,7 +467,7 @@ class PersonaPlus(Star):
             )
             return
 
-        yield event.plain_result("请发送人格内容或文件 (txt/md)，将在收到后立即处理。")
+        yield event.plain_result("请发送人格内容")
 
         @session_waiter(timeout=self.manage_wait_timeout)
         async def create_waiter(
@@ -520,7 +520,7 @@ class PersonaPlus(Star):
             yield event.plain_result(f"未找到人格 {persona_id}，请先创建该人格。")
             return
 
-        yield event.plain_result("请发送人格头像图片，将在收到后立即保存。")
+        yield event.plain_result("请发送人格头像图片")
 
         @session_waiter(timeout=self.manage_wait_timeout)
         async def avatar_waiter(
@@ -569,7 +569,7 @@ class PersonaPlus(Star):
             return
 
         yield event.plain_result(
-            "请发送新的人格内容或文件 (txt/md)，将在收到后立即更新。"
+            "请发送新的人格内容"
         )
 
         @session_waiter(timeout=self.manage_wait_timeout)
