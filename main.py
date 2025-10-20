@@ -171,7 +171,11 @@ class PersonaPlus(Star):
         raise ValueError("未检测到可解析的文本内容。请直接发送人格文本。")
 
     async def _create_persona(
-        self, persona_id: str, system_prompt: str, begin_dialogs: list, tools: list
+        self,
+        persona_id: str,
+        system_prompt: str,
+        begin_dialogs: list | None,
+        tools: list | None = None,
     ):
         """创建新人格"""
         try:
@@ -480,6 +484,7 @@ class PersonaPlus(Star):
                     persona_id=persona_id,
                     system_prompt=system_prompt,
                     begin_dialogs=begin_dialogs,
+                    tools=None,
                 )
             except ValueError as exc:
                 await next_event.send(next_event.plain_result(f"创建失败：{exc}"))
