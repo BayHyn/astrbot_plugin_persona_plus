@@ -2,46 +2,42 @@
 
 ![:name](https://count.getloli.com/@astrbot_plugin_persona_plus?name=astrbot_plugin_persona_plus&theme=miku&padding=7&offset=0&align=top&scale=1&pixelated=1&darkmode=auto)
 
-扩展 AstrBot 的人格管理能力，提供关键词自动切换、快速切换指令、以及与 QQ 头像/昵称的同步修改。
+#### 扩展 AstrBot 的人格管理能力，提供人格管理(包括创建、删除、更新等功能)、关键词自动切换、快速切换人格、以及与 QQ 头像/昵称的同步修改。
 
-主要特性
+### 主要特性
 - 使用命令直接 创建/更新 人格
 - 基于关键词的自动切换
 - 支持为人格上传头像，并在切换人格时同步切换QQ昵称和头像
 - 切换人格时可选择清空当前会话上下文
 
-安装
-- 将插件目录放到 AstrBot 的 `data/plugins/` 或 `packages/` 下（通常在仓库 `data/plugins/astrbot_plugin_persona_plus/` 已包含）。
-- 重启 AstrBot，插件将自动加载。
-
-主要命令
+### 主要命令
 （命令组：`/persona_plus`，别名：`/pp`、`/persona+`）
 
-- /persona_plus help
+- `/persona_plus help`
   - 显示帮助与命令说明。
 
-- /persona_plus list
+- `/persona_plus list`
   - 列出所有已注册的人格。
 
-- /persona_plus view <persona_id>
+- `/persona_plus view <persona_id>`
   - 查看指定人格的 System Prompt、预设对话与工具配置。
 
-- /persona_plus create <persona_id>
+- `/persona_plus create <persona_id>`
   - 创建新人格。发送此命令后，请直接在聊天中发送要作为 System Prompt 的纯文本。
 
-- /persona_plus update <persona_id>
+- `/persona_plus update <persona_id>`
   - 更新现有人格。发送此命令后，请直接在聊天中发送新的纯文本 System Prompt。
 
-- /persona_plus avatar <persona_id>
+- `/persona_plus avatar <persona_id>`
   - 上传或更新人格头像。发送此命令后，请在聊天中发送图片，插件会保存头像并在配置允许时尝试同步到 QQ。
 
-- /persona_plus delete <persona_id>
+- `/persona_plus delete <persona_id>`
   - 删除指定人格（管理员权限）。
 
-- 快捷切换：/pp <persona_id>
+- 快捷切换：`/pp <persona_id>`
   - 直接切换当前会话的人格，示例：`/pp assistant_v2`。
 
-配置项（摘要）
+### 配置项（摘要）
 - enable_keyword_switching: bool (默认: true)
   - 是否启用关键词自动切换。
 
@@ -64,8 +60,30 @@
   - 在等待用户发送文本（用于 create/update/avatar）时的超时时间（秒）。
 
 - sync_nickname_on_switch / sync_avatar_on_switch
-  - 与 QQ 同步相关设置，仅适配了NapCat
+  - 与 QQ 同步相关设置，仅适配了NapCat。
+  - `sync_nickname_on_switch`: 是否在切换人格时同步昵称/群名片。
+  - `sync_avatar_on_switch`: 是否在切换人格时同步头像。
   - 删除人格时会尝试删除对应的头像缓存文件。
 
+- nickname_sync_mode: string (默认: "profile")
+  - 昵称同步模式，有三种选择：
+    - `profile`: 仅修改 QQ 昵称，群聊和私聊都会修改 QQ 昵称。
+    - `group_card`: 群聊中只修改群名片（群昵称），私聊时不做任何修改。
+    - `hybrid`: 混合模式 - 群聊中只修改群名片，私聊中修改 QQ 昵称。
 
+- nickname_template: string (默认: "{persona_id}")
+  - 昵称/群名片模板，支持 `{persona_id}` 占位符。
+  - 例如：`"[Bot]{persona_id}"` 会将人格 ID 为 "assistant" 的昵称设置为 "[Bot]assistant"。
+
+
+### 更新日志
+#### ToDo
+  - [ ] 从文件解析人设
+  
+#### v1.1
+  - 添加插件logo
+  - 添加更改群昵称的功能
+  
+#### v1.0
+  - 实现插件基本功能
 

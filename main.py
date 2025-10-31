@@ -25,8 +25,8 @@ class KeywordMapping:
 @register(
     "persona_plus",
     "Railgun",
-    "扩展人格管理能力并支持关键词自动切换",
-    "1.0",
+    "扩展 AstrBot 的人格管理能力，提供人格管理(包括创建、删除、更新等功能)、关键词自动切换、快速切换人格、以及与 QQ 头像/昵称的同步修改。",
+    "1.1",
     "https://github.com/railgun19457/astrbot_plugin_persona_plus",
 )
 class PersonaPlus(Star):
@@ -256,7 +256,7 @@ class PersonaPlus(Star):
 
     @filter.event_message_type(filter.EventMessageType.ALL)
     async def on_quick_switch_command(self, event: AstrMessageEvent):
-        """支持 `/pp <persona_id>` 的快捷切换（框架不支持空子命令时使用此拦截）。"""
+        """支持 `/pp <persona_id>` 的快捷切换 """
 
         if not event.is_at_or_wake_command:
             return

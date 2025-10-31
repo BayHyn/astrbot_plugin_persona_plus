@@ -22,6 +22,7 @@ class QQProfileSync:
         self.enabled: bool = False
         self.sync_nickname: bool = True
         self.sync_avatar: bool = False
+        self.nickname_sync_mode: str = "profile"  # profile, group_card, hybrid
         self.nickname_template: str = "{persona_id}"
         self._last_synced_persona: dict[str, str] = {}
         self.avatar_dir: Path = (
@@ -33,19 +34,27 @@ class QQProfileSync:
         if not config:
             self.sync_nickname = True
             self.sync_avatar = False
+            self.nickname_sync_mode = "profile"
             self.enabled = self.sync_nickname or self.sync_avatar
             self.nickname_template = "{persona_id}"
             return
 
         self.sync_nickname = config.get("sync_nickname_on_switch", True)
         self.sync_avatar = config.get("sync_avatar_on_switch", False)
+        self.nickname_sync_mode = config.get("nickname_sync_mode", "profile")
+        if self.nickname_sync_mode not in {"profile", "group_card", "hybrid"}:
+            logger.warning(
+                "Persona+ 昵称同步模式 %s 无效，将使用默认值 profile",
+                self.nickname_sync_mode,
+            )
+            self.nickname_sync_mode = "profile"
         self.enabled = self.sync_nickname or self.sync_avatar
         self.nickname_template = config.get("nickname_template", "{persona_id}")
 
     def describe_settings(self) -> str:
         return (
             f"enabled={self.enabled}, nickname={self.sync_nickname}, "
-            f"avatar={self.sync_avatar}"
+            f"avatar={self.sync_avatar}, mode={self.nickname_sync_mode}"
         )
 
     def format_nickname(self, persona_id: str) -> str:
@@ -148,20 +157,33 @@ class QQProfileSync:
 
         nickname_applied = False
         avatar_synced = False
+        is_group = bool(event.get_group_id())
 
         if sync_nickname:
             nickname = self.format_nickname(persona_id)
-            if hasattr(event.bot, "set_qq_profile"):
-                try:
-                    await event.bot.set_qq_profile(nickname=nickname)
-                    nickname_applied = True
-                    logger.debug("Persona+ 已同步昵称为 %s", nickname)
-                except Exception as exc:  # noqa: BLE001
-                    logger.error("Persona+ 同步昵称失败：%s", exc)
-            else:
-                logger.warning(
-                    "Persona+ 当前适配器未实现 set_qq_profile 接口，跳过昵称同步。"
+
+            # 根据模式决定同步策略
+            if self.nickname_sync_mode == "profile":
+                # 只修改 QQ 昵称
+                nickname_applied = await self._sync_qq_profile(
+                    event, nickname
                 )
+            elif self.nickname_sync_mode == "group_card":
+                # 群聊中只修改群名片，私聊不修改
+                if is_group:
+                    nickname_applied = await self._sync_group_card(
+                        event, nickname
+                    )
+            elif self.nickname_sync_mode == "hybrid":
+                # 群聊中修改群名片，私聊中修改 QQ 昵称
+                if is_group:
+                    nickname_applied = await self._sync_group_card(
+                        event, nickname
+                    )
+                else:
+                    nickname_applied = await self._sync_qq_profile(
+                        event, nickname
+                    )
 
         if sync_avatar:
             avatar_path = self.get_avatar_path(persona_id)
@@ -184,6 +206,52 @@ class QQProfileSync:
 
         if nickname_applied or avatar_synced:
             self._last_synced_persona[bot_key] = persona_id
+
+    async def _sync_qq_profile(
+        self, event: AiocqhttpMessageEvent, nickname: str
+    ) -> bool:
+        """同步 QQ 昵称"""
+        if hasattr(event.bot, "set_qq_profile"):
+            try:
+                await event.bot.set_qq_profile(nickname=nickname)
+                logger.debug("Persona+ 已同步 QQ 昵称为 %s", nickname)
+                return True
+            except Exception as exc:  # noqa: BLE001
+                logger.error("Persona+ 同步 QQ 昵称失败：%s", exc)
+        else:
+            logger.warning(
+                "Persona+ 当前适配器未实现 set_qq_profile 接口，跳过 QQ 昵称同步。"
+            )
+        return False
+
+    async def _sync_group_card(
+        self, event: AiocqhttpMessageEvent, card: str
+    ) -> bool:
+        """同步群名片"""
+        group_id = event.get_group_id()
+        if not group_id:
+            return False
+
+        user_id = event.get_self_id()
+        if hasattr(event.bot, "call_action"):
+            try:
+                await event.bot.call_action(
+                    "set_group_card",
+                    group_id=int(group_id),
+                    user_id=int(user_id),
+                    card=card,
+                )
+                logger.debug(
+                    "Persona+ 已同步群名片为 %s (群 %s)", card, group_id
+                )
+                return True
+            except Exception as exc:  # noqa: BLE001
+                logger.error("Persona+ 同步群名片失败：%s", exc)
+        else:
+            logger.warning(
+                "Persona+ 当前适配器未实现 call_action 接口，跳过群名片同步。"
+            )
+        return False
 
     def clear_cache(self) -> None:
         self._last_synced_persona.clear()

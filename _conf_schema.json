@@ -52,6 +52,17 @@
     "type": "bool",
     "default": true
   },
+  "nickname_sync_mode": {
+    "description": "昵称同步模式",
+    "hint": "profile: 仅修改QQ昵称; group_card: 群聊中仅修改群名片,私聊不修改; hybrid: 群聊中修改群名片,私聊中修改QQ昵称。",
+    "type": "string",
+    "default": "profile",
+    "options": [
+      "profile",
+      "group_card",
+      "hybrid"
+    ]
+  },
   "sync_avatar_on_switch": {
     "description": "修改 QQ 头像",
     "hint": "是否在切换人格时改变 QQ 头像，仅NapCat。",
