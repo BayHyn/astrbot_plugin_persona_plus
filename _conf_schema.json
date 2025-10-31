@@ -1,7 +1,7 @@
 {
     "enable_keyword_switching": {
     "description": "启用关键词切换",
-    "hint": "关闭后将忽略关键词映射，不再自动切换人格。",
+    "hint": "关闭后仍然可以使用指令切换。",
     "type": "bool",
     "default": true
   },
@@ -13,7 +13,7 @@
   },
   "auto_switch_scope": {
     "description": "切换作用范围",
-    "hint": "决定切换后人格应用于当前对话、会话或全局。",
+    "hint": "决定切换后人格应用于当前对话、会话或全局",
     "type": "string",
     "default": "conversation",
     "options": [
@@ -23,32 +23,32 @@
     ]
   },
   "manage_wait_timeout_seconds": {
-    "description": "管理指令等待超时",
-    "hint": "创建或更新人格时等待用户发送内容的最长时间（秒）。",
+    "description": "管理指令等待超时时长",
+    "hint": "创建或更新人格时等待用户发送内容的最长时间（秒）",
     "type": "int",
     "default": 60
   },
   "require_admin_for_manage": {
     "description": "人格管理需管理员",
-    "hint": "启用后，创建/更新/删除人格指令仅管理员可用。",
+    "hint": "启用后，创建/更新/删除人格指令仅管理员可用",
     "type": "bool",
     "default": true
   },
   "enable_auto_switch_announce": {
     "description": "切换提示",
-    "hint": "切换人格时，是否发送提示。",
+    "hint": "切换人格时，是否发送提示",
     "type": "bool",
-    "default": false
+    "default": true
   },
   "clear_context_on_switch": {
     "description": "切换后清空上下文",
-    "hint": "启用后，在触发关键词自动切换人格后会清空当前对话上下文。",
+    "hint": "启用后，切换人格后会自动清空当前对话上下文，不需要手动reset",
     "type": "bool",
     "default": false
   },
   "sync_nickname_on_switch": {
     "description": "修改 QQ 昵称",
-    "hint": "是否在切换人格时改变 QQ 昵称，仅NapCat。",
+    "hint": "是否在切换人格时改变 QQ 昵称(仅适配NapCat!!!)",
     "type": "bool",
     "default": true
   },
@@ -56,7 +56,7 @@
     "description": "昵称同步模式",
     "hint": "profile: 仅修改QQ昵称; group_card: 群聊中仅修改群名片,私聊不修改; hybrid: 群聊中修改群名片,私聊中修改QQ昵称。",
     "type": "string",
-    "default": "profile",
+    "default": "group_card",
     "options": [
       "profile",
       "group_card",
@@ -65,13 +65,13 @@
   },
   "sync_avatar_on_switch": {
     "description": "修改 QQ 头像",
-    "hint": "是否在切换人格时改变 QQ 头像，仅NapCat。",
+    "hint": "是否在切换人格时改变 QQ 头像(仅适配NapCat!!!)",
     "type": "bool",
     "default": false
   },
   "nickname_template": {
     "description": "昵称模板",
-    "hint": "更改昵称时使用的模板，支持 {persona_id} 占位符。",
+    "hint": "更改昵称时使用的模板，支持 {persona_id}(人格ID) 占位符",
     "type": "string",
     "default": "{persona_id}"
   }
