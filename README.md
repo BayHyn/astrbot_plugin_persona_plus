@@ -11,7 +11,7 @@
 - 切换人格时可选择清空当前会话上下文
 
 ### 命令
-（命令组：`/persona_plus`，别名：`/pp`、`/persona+`）
+(命令组：`/persona_plus`，别名：`/pp`、`/persona+`)
 
 - 快捷切换：`/pp <persona_id>`
   - 切换当前会话的人格，示例：`/pp assistant_v2`
@@ -35,7 +35,7 @@
   - 上传或更新人格头像。发送此命令后，请在聊天中发送图片，插件会保存头像并在配置允许时尝试同步到 QQ
 
 - `/persona_plus delete <persona_id>`
-  - 删除指定人格（管理员权限）
+  - 删除指定人格(管理员权限)
 
 
 ### 配置项
@@ -43,15 +43,15 @@
   - 是否启用关键词自动切换
   - 默认: true
 
-- 关键词与人格切换映射列表（keyword_mappings）
+- 关键词与人格切换映射列表(keyword_mappings)
   - 每行一个`关键词:人格ID`，使用英文冒号分隔
   
 - 切换作用范围(auto_switch_scope)
   - 人格切换生效范围：`conversation`、`session` 或 `global`。
   - 默认: conversation
    
-- 管理指令等待超时时长（manage_wait_timeout_seconds）
-  - 创建或更新人格时等待用户发送内容的最长时间（秒）
+- 管理指令等待超时时长(manage_wait_timeout_seconds)
+  - 创建或更新人格时等待用户发送内容的最长时间(秒)
   - 默认：`60`
   
 
@@ -63,25 +63,25 @@
   - 切换人格时，是否发送提示
   - 默认：开启
 
-- 切换后清空上下文（clear_context_on_switch）
+- 切换后清空上下文(clear_context_on_switch)
   - 启用后，切换人格后会自动清空当前对话上下文，不需要手动reset
   - 默认：关闭
   
-- 修改 QQ 昵称（sync_nickname_on_switch）
+- 修改 QQ 昵称(sync_nickname_on_switch)
   - 是否在切换人格时改变 QQ 昵称(仅适配NapCat!!!)
   - 默认：开启
 
-- 昵称同步模式（nickname_sync_mode）
+- 昵称同步模式(nickname_sync_mode)
   - 修改昵称时，使用的模式
     - `profile`: 修改 QQ 昵称，群聊和私聊都会修改 QQ 昵称
-    - `group_card`: 群聊中只修改群名片（群昵称），私聊时不做任何修改
+    - `group_card`: 群聊中只修改群名片(群昵称)，私聊时不做任何修改
     - `hybrid`: 混合模式 - 群聊中只修改群名片，私聊中修改 QQ 昵称
-  - 默认：`group_card`（只修改群昵称）
-- 修改 QQ 头像（sync_avatar_on_switch）
+  - 默认：`group_card`(只修改群昵称)
+- 修改 QQ 头像(sync_avatar_on_switch)
   - 是否在切换人格时改变 QQ 头像(仅适配NapCat!!!)
   - 默认：关闭
   
-- 昵称模板（nickname_template）
+- 昵称模板(nickname_template)
   - 昵称/群名片模板，支持 `{persona_id}` 占位符。
     - 例如：`"[Bot]{persona_id}"` 会将人格 ID 为 "测试" 的昵称设置为 `"[Bot]测试"`
   - 默认: "{persona_id}"

@@ -24,7 +24,7 @@
   },
   "manage_wait_timeout_seconds": {
     "description": "管理指令等待超时时长",
-    "hint": "创建或更新人格时等待用户发送内容的最长时间（秒）",
+    "hint": "创建或更新人格时等待用户发送内容的最长时间(秒)",
     "type": "int",
     "default": 60
   },

@@ -363,13 +363,13 @@ class PersonaPlus(Star):
             return
 
         sections = [
-            "Persona+ 扩展指令（/persona_plus /pp /persona+ 可用）：",
+            "Persona+ 扩展指令(/persona_plus /pp /persona+ 可用)：",
             "- /persona_plus 人格ID — 切换到指定人格",
             "- /persona_plus help — 查看帮助与配置说明",
             "- /persona_plus list — 列出所有人格",
             "- /persona_plus view <persona_id> — 查看人格详情",
-            "- /persona_plus create <persona_id> — 创建新人格，随后发送纯文本内容（不要上传文件）",
-            "- /persona_plus update <persona_id> — 更新人格，随后发送纯文本内容（不要上传文件）",
+            "- /persona_plus create <persona_id> — 创建新人格，随后发送纯文本内容(不要上传文件)",
+            "- /persona_plus update <persona_id> — 更新人格，随后发送纯文本内容(不要上传文件)",
             "- /persona_plus avatar <persona_id> — 上传人格头像，随后发送图片",
             "- /persona_plus delete <persona_id> — 删除人格 (管理员)"
         ]
@@ -438,7 +438,7 @@ class PersonaPlus(Star):
 
     @persona_plus.command("delete")
     async def cmd_delete(self, event: AstrMessageEvent, persona_id: str):
-        """删除指定人格（仅管理员）。"""
+        """删除指定人格(仅管理员)。"""
 
         if not self._has_permission(event, manage_operation=True, force_admin=True):
             yield event.plain_result("此操作需要管理员权限。")
